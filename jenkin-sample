@@ -1,0 +1,31 @@
+pipeline{
+agent any 
+
+stages {
+stage('Build') {
+steps {
+sh 'docker rmi my-flask-app'
+sh 'docker build -t my-flask-app .'
+sh 'docker tag my-flask-app $DOCKER-BFLASK-IMAGE'
+}
+}
+stage ('test'){
+steps {
+sh 'docker run my-flask-app python -m pytest app/tests/'
+}
+}
+stage('Deploy'){
+steps {
+withCredentials([usernamePassword(credentialsId: "${DOCKER_REGISTRY_CREDS}", passwordVariable : 'DOCKER_PASSWORD' usernameVariable : ")]) {//someblock}
+sh "echo \$DOCKER_PASSWORD  | docker login -u \ $DOCKER_USERNAME --password-stdin docker.io "
+sh 'docker push $DOCKER_BFLASK_IMAGE'
+}
+}
+}
+}
+post {
+always {
+sh 'dockerlogout '
+}
+}
+}
